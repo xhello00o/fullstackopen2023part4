@@ -1,0 +1,52 @@
+{
+  "name": "blog_list",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@testing-library/jest-dom": "^5.16.5",
+    "@testing-library/react": "^13.4.0",
+    "@testing-library/user-event": "^13.5.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "5.0.1",
+    "web-vitals": "^2.1.4",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "mongoose": "^7.2.1",
+    "nodemon": "^2.0.22"
+  },
+  
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "deploy:full": "npm run build:ui && git add . && git commit -m uibuild && git push",
+    "build:ui": "rmdir /s /q frontbuild && cd C:\\Users\\kokboon\\Documents\\GitHub\\fullstackopen23part0to2\\part2\\\"part 2.15 to 2.17\" && npm run build && xcopy build \"C:\\Users\\kokboon\\Documents\\GitHub\\fullstackopen2023_part3\\part3\\frontbuild\" /e /i",
+    "lint": "eslint ."
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "description": "This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).",
+  "main": "index.js",
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "eslint": "^8.41.0",
+    "nodemon": "^2.0.22"
+  }
+}
