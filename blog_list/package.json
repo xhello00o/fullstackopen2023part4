@@ -6,22 +6,26 @@
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
+    "cors": "^2.8.5",
+    "cross-env": "^7.0.3",
+    "dotenv": "^16.0.3",
+    "express-async-errors": "^3.1.1",
+    "mongoose": "^7.2.1",
+    "nodemon": "^2.0.22",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",
-    "web-vitals": "^2.1.4",
-    "cors": "^2.8.5",
-    "dotenv": "^16.0.3",
-    "mongoose": "^7.2.1",
-    "nodemon": "^2.0.22"
+    "supertest": "^6.3.3",
+    "web-vitals": "^2.1.4"
   },
-  
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js",
+    "start": "cross-env NODE_ENV=production node index.js",
+    "dev": "cross-env NODE_ENV=development nodemon index.js",
     "deploy:full": "npm run build:ui && git add . && git commit -m uibuild && git push",
     "build:ui": "rmdir /s /q frontbuild && cd C:\\Users\\kokboon\\Documents\\GitHub\\fullstackopen23part0to2\\part2\\\"part 2.15 to 2.17\" && npm run build && xcopy build \"C:\\Users\\kokboon\\Documents\\GitHub\\fullstackopen2023_part3\\part3\\frontbuild\" /e /i",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "cross-env NODE_ENV=test jest --verbose --runInBand",
+    "cross-env": "^7.0.3"
   },
   "eslintConfig": {
     "extends": [
@@ -47,6 +51,10 @@
   "license": "ISC",
   "devDependencies": {
     "eslint": "^8.41.0",
+    "jest": "^27.5.1",
     "nodemon": "^2.0.22"
+  },
+  "jest": {
+    "testEnvironment": "node"
   }
 }

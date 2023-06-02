@@ -1,4 +1,5 @@
 const express = require("express");
+require('express-async-errors')
 const app = express();
 const cors = require("cors");
 const blogrouter = require("./controller/blogrouter");
@@ -13,7 +14,7 @@ logger.info(config.MONGO_DB_PW)
 mongoose.set("strictQuery", false);
 mongoose
   .connect(
-    `mongodb+srv://${config.MONGO_DB_USER}:${config.MONGO_DB_PW}@cluster0.btr3mlg.mongodb.net/bloglist?retryWrites=true&w=majority`
+    config.MONGO_DB_URI
   )
   .then((response) => {
     logger.info("DB connected");
