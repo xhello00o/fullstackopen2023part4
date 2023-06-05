@@ -7,7 +7,7 @@ const middleware = require("./util/middleware");
 const config = require("./util/config");
 const mongoose = require("mongoose");
 const logger = require("./util/logger");
-const Blog = require("./models/bloglist")
+const userrouter = require('./controller/userrouter');
 
 logger.info(config.MONGO_DB_USER)
 logger.info(config.MONGO_DB_PW)
@@ -29,6 +29,7 @@ app.use(express.json());
 app.use(middleware.requestLogger);
 
 app.use('/api/blogs',blogrouter)
+app.use('/api/users',userrouter)
 
 app.use(middleware.unknownEndpoint);
 app.use(middleware.errorHandler);

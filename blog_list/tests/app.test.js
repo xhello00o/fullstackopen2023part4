@@ -3,6 +3,7 @@ const supertest = require("supertest")
 const app = require('../app')
 const api = supertest(app)
 const Blog = require("../models/bloglist")
+const User = require("../models/user")
 
 const initialBlogs = [
     {
@@ -182,7 +183,7 @@ describe(`HTTP DELETE`, ()=> {
 describe(`HTTP PUT`, ()=> {
     const testnote = {...initialBlogs[0], likes: initialBlogs[0].likes +1}
     const testnote2 ={ _id:'test'}
-    test.only ('succesfully updated the correct entry', async ()=>{
+    test ('succesfully updated the correct entry', async ()=>{
         const putresp = await api.put(`/api/blogs/${testnote._id}`).send(testnote)
         
         console.log("updated",putresp.body)
@@ -198,6 +199,44 @@ describe(`HTTP PUT`, ()=> {
     })
     
 
+})
+
+describe('Users HTTP POST',()=>{
+    const testuser = {
+        username:'root',
+        name:'testroot',
+        password:'password123'
+    }
+    const testuser2 = {
+        username:'root1',
+        name:'testroot',
+        password:'pw'
+    }
+    beforeEach(async()=> {
+        await User.deleteMany({})
+        const newuser = new User( testuser)
+        await newuser.save()
+    })
+
+    test('verify invalid username',async()=>{
+        const resp = await api.post('/api/users').send(testuser).expect(400)
+        console.log(resp.body)
+        expect(resp.body.error).toContain('User validation failed')
+
+        const getresp = await api.get('/api/users')
+        expect(getresp.body).toHaveLength(1)
+
+    })
+
+    test('verify invalid password',async()=>{
+        const resp = await api.post('/api/users').send(testuser2).expect(400)
+        console.log(resp.body)
+        expect(resp.body.error).toContain('invalid password')
+
+        const getresp = await api.get('/api/users')
+        expect(getresp.body).toHaveLength(1)
+
+    })
 })
 
 
