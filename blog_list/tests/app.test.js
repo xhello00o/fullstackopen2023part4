@@ -4,6 +4,27 @@ const app = require('../app')
 const api = supertest(app)
 const Blog = require("../models/bloglist")
 const User = require("../models/user")
+const bcrypt = require('bcrypt')
+
+const testusers = [
+    {
+        _id: "64801d5a7b677bd4f2e5efd8",
+        username: "root",
+        name: "testroot",
+        password: "password123",
+        __v: 0
+    },
+    {
+        username: "root1",
+        name: "testroot",
+        password: "pw",
+    },
+    {
+        username: "root2",
+        name: "testroot",
+        password: "passwordis123",
+    },
+];
 
 const initialBlogs = [
     {
@@ -57,16 +78,59 @@ const initialBlogs = [
 ]
 
 beforeEach(async () => {
+    let blogid = []
     await Blog.deleteMany({})
+    await User.deleteMany({})
+
+    const passwordHash = await bcrypt.hash(testusers[0].password, 10)
+
+    const newuser = new User({
+        _id: testusers[0]._id,
+        username: testusers[0].username,
+        name: testusers[0].name,
+        __v: 0,
+        passwordHash: passwordHash
+    })
+
+    const savedUser = await newuser.save()
+
+
+    const passwordHash2 = await bcrypt.hash(testusers[2].password, 10)
+
+    const newuser2 = new User({
+        _id: testusers[2]._id,
+        username: testusers[2].username,
+        name: testusers[2].name,
+        __v: 0,
+        passwordHash: passwordHash2
+    })
+
+     await newuser2.save()
+
+
+    
     for (let eachblog of initialBlogs) {
-        let blog = new Blog(eachblog)
-        await blog.save()
+        let blog = new Blog({
+            ...eachblog,
+            user: savedUser._id
+        })
+        const blogresp = await blog.save()
+        blogid.push(blogresp._id)
     }
+    console.log("blogid", blogid)
+
+    const updateduser = {
+        _id: savedUser._id,
+        blogs: blogid
+    }
+    await User.findByIdAndUpdate(savedUser._id, updateduser)
+
 })
 
 
-describe(`HTTP GET`, () => {
-    test('notes are returned as json ', async () => {
+
+describe(`HTTP /api/blogs GET`, () => {
+    test('notes are returned as json', async () => {
         const resp = await api
             .get('/api/blogs')
             .expect(200)
@@ -76,7 +140,7 @@ describe(`HTTP GET`, () => {
 
 
     })
-    test('notes have the correct length ', async () => {
+    test('notes have the correct length', async () => {
         const resp = await api
             .get('/api/blogs')
 
@@ -86,7 +150,7 @@ describe(`HTTP GET`, () => {
 
     })
 
-    test('Unique Identifier is Id ', async () => {
+    test('Unique Identifier is Id', async () => {
         const resp = await api
             .get('/api/blogs')
 
@@ -101,12 +165,12 @@ describe(`HTTP GET`, () => {
 
 })
 
-describe(`HTTP POST`, () => {
+describe(`HTTP /api/blogs POST`, () => {
     const testnote = {
         title: "test",
         author: "test",
         url: "test",
-        likes:1
+        likes: 1
     }
 
     const testnote2 = {
@@ -118,108 +182,140 @@ describe(`HTTP POST`, () => {
     const testnote3 = {
         author: "test",
         url: "test",
-        likes:1
+        likes: 1
     }
 
     const testnote4 = {
         title: "test",
         author: "test",
-        likes:1
+        likes: 1
     }
-    test('test note is created successfully',async ()=>{
-        const postresp = await api.post('/api/blogs').send(testnote)
+    test('testnote is created successfully to the correct user', async () => {
+        const loginresp = await api.post('/api/login').send(testusers[0])
+        console.log(loginresp)
+        const token = loginresp.body.token
+        console.log("token",token)
+        const postresp = await api.post('/api/blogs').set('Authorization', `Bearer ${token}`).send(testnote)
 
-        console.log(postresp.body)
+        console.log(postresp.body.user.toString())
         expect(postresp.body).toMatchObject(testnote)
+        expect(postresp.body.user.toString()).toBe("64801d5a7b677bd4f2e5efd8")
 
-        const getresp = await api.get('/api/blogs')
-        expect(getresp.body).toHaveLength(initialBlogs.length +1 )
+        const getcreatedblogresp = await User.findById(postresp.body.user)
+        expect(getcreatedblogresp.blogs).toHaveLength(initialBlogs.length + 1)
+
+        const getresp = await Blog.find({})
+        expect(getresp).toHaveLength(initialBlogs.length + 1)
+    
 
 
     })
-    test('missing likes is default set to 0',async ()=>{
-        const postresp = await api.post('/api/blogs').send(testnote2)
+    test('missing likes is default set to 0', async () => {
+        const loginresp = await api.post('/api/login').send(testusers[0])
+        console.log(loginresp)
+        const token = loginresp.body.token
+        console.log("token",token)
+        const postresp = await api.post('/api/blogs').set('Authorization', `Bearer ${token}`).send(testnote2)
 
         console.log(postresp.body)
-        expect(postresp.body).toMatchObject({...testnote,likes:0})
+        expect(postresp.body).toMatchObject({ ...testnote, likes: 0 })
 
-        const getresp = await api.get('/api/blogs')
-        expect(getresp.body).toHaveLength(initialBlogs.length +1 )
+        const getresp = await Blog.find({})
+        expect(getresp).toHaveLength(initialBlogs.length + 1)
 
 
     })
-    test('missing title/url error 400 is return',async ()=>{
-        await api.post('/api/blogs')
-        .send(testnote3)
-        .expect(400)
+    test('missing title/url error 400 is return', async () => {
+        const loginresp = await api.post('/api/login').send(testusers[0])
+        console.log(loginresp)
+        const token = loginresp.body.token
+        console.log("token",token)
 
-    
-         await api.post('/api/blogs')
-        .send(testnote4)
-        .expect(400)
-        
+        await api.post('/api/blogs').set('Authorization', `Bearer ${token}`)
+            .send(testnote3)
+            .expect(400)
+
+        await api.post('/api/blogs').set('Authorization', `Bearer ${token}`)
+            .send(testnote4)
+            .expect(400)
+
+    })
+
+    test('verify adding blog w/o token response code', async()=>{
+        await api.post('/api/blogs').set('Authorization', `Bearer `)
+            .send(testnote)
+            .expect(401)
+
     })
 
 })
 
-describe(`HTTP DELETE`, ()=> {
+describe(`HTTP /api/blogs DELETE`, () => {
     const testnote = initialBlogs[0]
     console.log(testnote)
-    test ('succesfully deleted the correct entry', async ()=>{
-         await api.delete(`/api/blogs/${testnote._id}`)
+    test('succesfully deleted the correct entry', async () => {
+        const loginresp = await api.post('/api/login').send(testusers[0])
+        console.log(loginresp)
+        const token = loginresp.body.token
+        console.log("token",token)
+        await api.delete(`/api/blogs/${testnote._id}`).set('Authorization', `Bearer ${token}`)
 
-        
-        const getresp = await api.get('/api/blogs')
-        expect(getresp.body).toHaveLength(initialBlogs.length-1)
 
-         await api.get(`/api/blogs/${testnote._id} `)
-        .expect(404)
-        
+        const getresp = await Blog.find({})
+        expect(getresp).toHaveLength(initialBlogs.length - 1)
+
+        const userresp = await User.findById(testusers[0]._id)
+        expect(userresp.blogs).not.toContain(testnote._id)
+
+        await api.get(`/api/blogs/${testnote._id} `)
+            .expect(404)
+
     })
-    
+
+    test('Users only delete their own blogs',async()=>{
+        const loginresp = await api.post('/api/login').send(testusers[2])
+        console.log(loginresp)
+        const token = loginresp.body.token
+        console.log("token",token)
+        const delresp = await api.delete(`/api/blogs/${testnote._id}`).set('Authorization', `Bearer ${token}`).expect(401)
+        expect(delresp.body.error).toContain("invalid user")
+
+        const getblogs = await Blog.find({})
+        console.log(getblogs)
+        expect(getblogs).toHaveLength(initialBlogs.length)
+
+        const getaffecteduser = await User.findById(testusers[0]._id)
+        expect(getaffecteduser.blogs).toHaveLength(initialBlogs.length)
+
+
+    })
+
 
 })
 
-describe(`HTTP PUT`, ()=> {
-    const testnote = {...initialBlogs[0], likes: initialBlogs[0].likes +1}
-    const testnote2 ={ _id:'test'}
-    test ('succesfully updated the correct entry', async ()=>{
-        const putresp = await api.put(`/api/blogs/${testnote._id}`).send(testnote)
-        
-        console.log("updated",putresp.body)
-        expect(putresp.body.likes).toBe(initialBlogs[0].likes +1)
+describe(`HTTP /api/blogs PUT`, () => {
+    const testnote = { ...initialBlogs[0], likes: initialBlogs[0].likes + 1 }
+    test('succesfully updated the correct entry', async () => {
+        const loginresp = await api.post('/api/login').send(testusers[0])
+        console.log(loginresp)
+        const token = loginresp.body.token
+        console.log("token",token)
 
-              
-        const putresp2 = await api.put(`/api/blogs/${testnote._id}`).send(testnote2)
-        /expect(500)
-        console.log("wrong id",putresp2)
-       
+        const putresp = await api.put(`/api/blogs/${testnote._id}`).set('Authorization', `Bearer ${token}`).send(testnote)
+        console.log("updated", putresp.body)
+        expect(putresp.body.likes).toBe(initialBlogs[0].likes + 1)
 
-        
     })
-    
+
 
 })
 
-describe('Users HTTP POST',()=>{
-    const testuser = {
-        username:'root',
-        name:'testroot',
-        password:'password123'
-    }
-    const testuser2 = {
-        username:'root1',
-        name:'testroot',
-        password:'pw'
-    }
-    beforeEach(async()=> {
-        await User.deleteMany({})
-        const newuser = new User( testuser)
-        await newuser.save()
-    })
+describe('Users HTTP POST', () => {
 
-    test('verify invalid username',async()=>{
-        const resp = await api.post('/api/users').send(testuser).expect(400)
+
+
+    test('verify invalid duplicate username', async () => {
+        const resp = await api.post('/api/users').send(testusers[0]).expect(400)
         console.log(resp.body)
         expect(resp.body.error).toContain('User validation failed')
 
@@ -228,8 +324,8 @@ describe('Users HTTP POST',()=>{
 
     })
 
-    test('verify invalid password',async()=>{
-        const resp = await api.post('/api/users').send(testuser2).expect(400)
+    test('verify invalid password', async () => {
+        const resp = await api.post('/api/users').send(testusers[1]).expect(400)
         console.log(resp.body)
         expect(resp.body.error).toContain('invalid password')
 
@@ -237,6 +333,8 @@ describe('Users HTTP POST',()=>{
         expect(getresp.body).toHaveLength(1)
 
     })
+
+
 })
 
 

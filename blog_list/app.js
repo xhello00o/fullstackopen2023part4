@@ -8,7 +8,7 @@ const config = require("./util/config");
 const mongoose = require("mongoose");
 const logger = require("./util/logger");
 const userrouter = require('./controller/userrouter');
-const loginrouter = require('./controller/loginrouter')
+const loginrouter = require('./controller/loginrouter');
 
 logger.info(config.MONGO_DB_USER)
 logger.info(config.MONGO_DB_PW)
@@ -28,6 +28,7 @@ mongoose
 app.use(cors());
 app.use(express.json());
 app.use(middleware.requestLogger);
+app.use(middleware.tokenExtractor);
 
 app.use('/api/login', loginrouter)
 app.use('/api/blogs',blogrouter)

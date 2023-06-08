@@ -7,9 +7,9 @@ require('dotenv').config()
 
 
 loginrouter.post('/', async (request, response, next) => {
-    const { username, password } = request.body
+    const username = request.body.username
+    const password = request.body.password
     const user = await User.find({ username })
-    console.log(username, password)
     const passwordCorrect = user === null ?
         false
         : await bcrypt.compare(password, user[0].passwordHash)
@@ -28,7 +28,6 @@ loginrouter.post('/', async (request, response, next) => {
     
 
     const token = jwt.sign(userToken, process.env.SECRET)
-    console.log(token)
 
     response.status(200).send({ token, username: user[0].username, name: user[0].name })
 

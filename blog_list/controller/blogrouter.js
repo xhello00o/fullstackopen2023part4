@@ -2,20 +2,13 @@ const blogrouter = require('express').Router()
 const Blog = require("../models/bloglist")
 const User = require('../models/user')
 const jwt = require('jsonwebtoken')
+const middleware = require('../util/middleware')
 require('dotenv').config()
 
 
-const getTokenFrom = request => {
-    const authorization = request.get('Authorization')
-    console.log(authorization)
-    if (authorization && authorization.startsWith('Bearer ')) {
-      return authorization.replace('Bearer ', '')
-    }
-    return null
-  }
 
 blogrouter.get('/', async (request, response, next) => {
-    const blogs = await Blog.find({}).populate('user',{blogs:0})
+    const blogs = await Blog.find({}).populate('user', { blogs: 0 })
     response.json(blogs)
 })
 
@@ -34,22 +27,11 @@ blogrouter.get('/:id', async (request, response, next) => {
 })
 
 
-blogrouter.post('/', async (request, response, next) => {
+blogrouter.post('/', middleware.userExtractor, async (request, response, next) => {
     const blogreq = request.body
     console.log(blogreq)
-    const token = getTokenFrom(request)
-    console.log(token,process.env.SECRET)
-    const decodedToken = await jwt.verify(token,process.env.SECRET)
-    console.log("decoded",decodedToken)
-    if (!decodedToken.id) {
-        return response.status(401).json({ error: 'token invalid' })
-      }
-    
-    const user = await User.findById(decodedToken.id)
 
-
-
-    
+    const user = await User.findById(request.user)
 
     if (!blogreq.url || blogreq.url === "" || !blogreq.title || blogreq.title === "") {
         response.status(400).end()
@@ -57,15 +39,13 @@ blogrouter.post('/', async (request, response, next) => {
     if (!blogreq.likes || blogreq.likes === "") {
         blogreq.likes = 0
     }
-
-
     console.log("user", user)
 
     const blog = new Blog({
         ...blogreq,
         user: user._id
     })
-    console.log("new blog",blog)
+    console.log("new blog", blog)
 
     const blogresult = await blog.save()
     console.log("blog", blogresult)
@@ -78,60 +58,97 @@ blogrouter.post('/', async (request, response, next) => {
 
 })
 
-blogrouter.delete('/:id', async (request, response, next) => {
+blogrouter.delete('/:id', middleware.userExtractor, async (request, response, next) => {
     console.log("abc", request.params)
-    const resp = await Blog.findByIdAndRemove(request.params.id)
 
-    response.status(204).json(resp)
+    const findblog = await Blog.findById(request.params.id)
+    console.log(findblog)
+    const bloguser = findblog.user.toString()
+    const loginuser = request.user
+    console.log("bloguser:", bloguser)
+    console.log("loginuser", loginuser)
+
+
+
+    if (bloguser === loginuser) {
+        const userresp = await User.findById(findblog.user)
+        const userblogs = userresp.blogs
+        const filteredblogs = userblogs.filter(blog => blog.toString() !== request.params.id)
+        console.log(filteredblogs)
+        await User.findByIdAndUpdate(userresp._id, { blogs: filteredblogs })
+
+        const resp = await Blog.findByIdAndRemove(request.params.id)
+
+        response.status(201).json(resp)
+    }
+    else {
+        return response.status(401).json({ error: 'invalid user' })
+    }
 })
 
-blogrouter.delete('/', async (request,response,next)=> {
+blogrouter.delete('/', async (request, response, next) => {
     const allblogs = await Blog.find({})
-    for (let oneblog of allblogs){
+    for (let oneblog of allblogs) {
         const eachuser = await User.findById(oneblog.user)
-        console.log("eachuser",eachuser)
+        console.log("eachuser", eachuser)
         const filteredblogs = eachuser.blogs.filter(blog => false)
-        console.log('filtered',filteredblogs)
-        const user ={
-            _id:eachuser._id,
-            blogs:[]
+        console.log('filtered', filteredblogs)
+        const user = {
+            _id: eachuser._id,
+            blogs: []
         }
-        console.log("user",user)
-        const userresp = await User.findByIdAndUpdate(eachuser._id,user,{
-            new:true,
-            context:'query'
+        console.log("user", user)
+        const userresp = await User.findByIdAndUpdate(eachuser._id, user, {
+            new: true,
+            context: 'query'
         })
-        console.log("userresp",userresp)
+        console.log("userresp", userresp)
     }
-    
 
-    const delresp= await Blog.deleteMany({})
-    response.status(201).json({message:"successfuly deleted all" ,delresp})
+
+    const delresp = await Blog.deleteMany({})
+    response.status(201).json({ message: "successfuly deleted all", delresp })
 })
 
-blogrouter.put('/:id', async (request, response, next) => {
-    const updatedblog = request.body
-    const blog = {
-        title: updatedblog.title,
-        author: updatedblog.author,
-        url: updatedblog.url,
-        likes: updatedblog.likes
+blogrouter.put('/:id', middleware.userExtractor, async (request, response, next) => {
+
+
+
+    const findblog = await Blog.findById(request.params.id)
+    console.log(findblog)
+    const bloguser = findblog.user.toString()
+    const loginuser = request.user
+    console.log("bloguser:", bloguser)
+    console.log("loginuser", loginuser)
+
+    if (bloguser === loginuser) {
+        const updatedblog = request.body
+        const blog = {
+            title: updatedblog.title,
+            author: updatedblog.author,
+            url: updatedblog.url,
+            likes: updatedblog.likes
+        }
+
+        const result = await Blog.findByIdAndUpdate(request.params.id, blog, {
+            new: true,
+            context: 'query',
+            runValidators: true,
+        })
+        if (result === null) {
+            const error = new Error('Not Found')
+            error.status = 500
+            error.statusMessage = 'Not Found'
+
+            next(error)
+        }
+        console.log("test", result)
+        response.status(200).json(result)
+    } else {
+        return response.status(401).json({ error: 'invalid user' })
     }
 
-    const result = await Blog.findByIdAndUpdate(request.params.id, blog, {
-        new: true,
-        context: 'query',
-        runValidators: true,
-    })
-    if (result === null) {
-        const error = new Error('Not Found')
-        error.status = 500
-        error.statusMessage = 'Not Found'
 
-        next(error)
-    }
-    console.log("test", result)
-    response.status(200).json(result)
 
 })
 
