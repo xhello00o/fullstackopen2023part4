@@ -34,7 +34,7 @@ blogrouter.post('/', middleware.userExtractor, async (request, response, next) =
     const user = await User.findById(request.user)
 
     if (!blogreq.url || blogreq.url === "" || !blogreq.title || blogreq.title === "") {
-        response.status(400).end()
+        response.status(400).send({error:"Missing Url or Title"})
     }
     if (!blogreq.likes || blogreq.likes === "") {
         blogreq.likes = 0
