@@ -34,7 +34,7 @@ blogrouter.post('/', middleware.userExtractor, async (request, response, next) =
     const user = await User.findById(request.user)
 
     if (!blogreq.url || blogreq.url === "" || !blogreq.title || blogreq.title === "") {
-        response.status(400).send({error:"Missing Url or Title"})
+        return response.status(400).send({error:"Missing Url or Title"})
     }
     if (!blogreq.likes || blogreq.likes === "") {
         blogreq.likes = 0
@@ -50,11 +50,18 @@ blogrouter.post('/', middleware.userExtractor, async (request, response, next) =
     const blogresult = await blog.save()
     console.log("blog", blogresult)
     user.blogs = user.blogs.concat(blogresult._id)
+    const respResult = blogresult.toJSON()
 
     const userresult = await user.save()
     console.log("user", userresult)
 
-    response.status(201).json(blogresult)
+    response.status(201).json(
+        {...respResult,
+        user:{
+            username:userresult.username,
+            name:userresult.name,
+            id:userresult._id.toString()
+        }})
 
 })
 
