@@ -28,7 +28,8 @@
     "build:ui": "rmdir /s /q frontbuild && cd C:\\Users\\kokboon\\Documents\\GitHub\\fullstackopen23part0to2\\part2\\\"part 2.15 to 2.17\" && npm run build && xcopy build \"C:\\Users\\kokboon\\Documents\\GitHub\\fullstackopen2023_part3\\part3\\frontbuild\" /e /i",
     "lint": "eslint .",
     "test": "cross-env NODE_ENV=test jest --verbose --runInBand",
-    "cross-env": "^7.0.3"
+    "cross-env": "^7.0.3",
+    "start:test": "cross-env NODE_ENV=test nodemon index.js"
   },
   "eslintConfig": {
     "extends": [

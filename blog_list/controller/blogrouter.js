@@ -93,7 +93,7 @@ blogrouter.delete('/:id', middleware.userExtractor, async (request, response, ne
     }
 })
 
-blogrouter.delete('/', async (request, response, next) => {
+blogrouter.delete('/all', async (request, response, next) => {
     const allblogs = await Blog.find({})
     for (let oneblog of allblogs) {
         const eachuser = await User.findById(oneblog.user)
@@ -130,12 +130,14 @@ blogrouter.put('/:id', middleware.userExtractor, async (request, response, next)
 
     if (bloguser === loginuser) {
         const updatedblog = request.body
+        console.log(updatedblog)
         const blog = {
             title: updatedblog.title,
             author: updatedblog.author,
             url: updatedblog.url,
             likes: updatedblog.likes
         }
+        console.log(blog)
 
         const result = await Blog.findByIdAndUpdate(request.params.id, blog, {
             new: true,

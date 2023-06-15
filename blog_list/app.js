@@ -30,9 +30,19 @@ app.use(express.json());
 app.use(middleware.requestLogger);
 app.use(middleware.tokenExtractor);
 
+
 app.use('/api/login', loginrouter)
 app.use('/api/blogs',blogrouter)
 app.use('/api/users',userrouter)
+console.log("🚀 ~ file: app.js:38 ~ process.env.NODE_ENV :", process.env.NODE_ENV )
+if (process.env.NODE_ENV === 'test') {
+  
+  console.log('yes')
+  const testrouter = require('./controller/testrouter')
+  app.use('/api/testing', testrouter)
+}
+
+
 
 app.use(middleware.unknownEndpoint);
 app.use(middleware.errorHandler);
