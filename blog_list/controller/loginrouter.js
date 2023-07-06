@@ -10,7 +10,9 @@ loginrouter.post('/', async (request, response, next) => {
     const username = request.body.username
     const password = request.body.password
     const user = await User.find({ username })
-    const passwordCorrect = user === null ?
+    console.log("🚀 ~ file: loginrouter.js:13 ~ loginrouter.post ~ user:", user)
+    
+    const passwordCorrect = user.length ===0 ?
         false
         : await bcrypt.compare(password, user[0].passwordHash)
 
