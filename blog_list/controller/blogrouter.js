@@ -33,13 +33,14 @@ blogrouter.post('/', middleware.userExtractor, async (request, response, next) =
 
     const user = await User.findById(request.user)
 
-    if (!blogreq.url || blogreq.url === "" || !blogreq.title || blogreq.title === "") {
-        return response.status(400).send({error:"Missing Url or Title"})
+    if (!blogreq.content || blogreq.content === "" ) {
+        return response.status(400).send({error:"Missing content"})
     }
-    if (!blogreq.likes || blogreq.likes === "") {
-        blogreq.likes = 0
+    if (!blogreq.votes || blogreq.votes === "") {
+        blogreq.votes = 0
     }
     console.log("user", user)
+    
 
     const blog = new Blog({
         ...blogreq,
