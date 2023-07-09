@@ -28,18 +28,20 @@ blogrouter.get('/:id', async (request, response, next) => {
 
 
 blogrouter.post('/', middleware.userExtractor, async (request, response, next) => {
+    console.log("🚀 ~ file: blogrouter.js:31 ~ blogrouter.post ~ request:", request.user)
     const blogreq = request.body
     console.log(blogreq)
 
     const user = await User.findById(request.user)
 
-    if (!blogreq.url || blogreq.url === "" || !blogreq.title || blogreq.title === "") {
-        return response.status(400).send({error:"Missing Url or Title"})
+    if (!blogreq.title || blogreq.title === "" || !blogreq.url ||blogreq.url ==="")  {
+        return response.status(400).send({error:"Missing title or URL"})
     }
     if (!blogreq.likes || blogreq.likes === "") {
-        blogreq.likes = 0
+        blogreq.votes = 0
     }
     console.log("user", user)
+
 
     const blog = new Blog({
         ...blogreq,
@@ -132,9 +134,44 @@ blogrouter.put('/:id', middleware.userExtractor, async (request, response, next)
         const updatedblog = request.body
         console.log(updatedblog)
         const blog = {
-            title: updatedblog.title,
-            author: updatedblog.author,
-            url: updatedblog.url,
+            content: updatedblog.content,
+            votes: updatedblog.votes
+        }
+        console.log(blog)
+
+        const result = await Blog.findByIdAndUpdate(request.params.id, blog, {
+            new: true,
+            context: 'query',
+            runValidators: true,
+        })
+        if (result === null) {
+            return response.status(402).json({ error: 'Not Found' })
+        }
+        console.log("test", result)
+        response.status(200).json(result)
+    } else {
+        return response.status(401).json({ error: 'invalid user' })
+    }
+
+
+
+})
+
+blogrouter.put('/like/:id', middleware.userExtractor, async (request, response, next) => {
+
+
+
+    const findblog = await Blog.findById(request.params.id)
+    console.log(findblog)
+    const bloguser = findblog.user.toString()
+    const loginuser = request.user
+    console.log("bloguser:", bloguser)
+    console.log("loginuser", loginuser)
+
+    if (loginuser) {
+        const updatedblog = request.body
+        console.log(updatedblog)
+        const blog = {
             likes: updatedblog.likes
         }
         console.log(blog)
@@ -145,16 +182,12 @@ blogrouter.put('/:id', middleware.userExtractor, async (request, response, next)
             runValidators: true,
         })
         if (result === null) {
-            const error = new Error('Not Found')
-            error.status = 500
-            error.statusMessage = 'Not Found'
-
-            next(error)
+            return response.status(402).json({ error: 'Not Found' })
         }
         console.log("test", result)
         response.status(200).json(result)
     } else {
-        return response.status(401).json({ error: 'invalid user' })
+        return response.status(401).json({ error: 'Not logged in' })
     }
 
 
