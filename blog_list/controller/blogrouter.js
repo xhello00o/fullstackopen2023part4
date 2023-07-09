@@ -134,8 +134,10 @@ blogrouter.put('/:id', middleware.userExtractor, async (request, response, next)
         const updatedblog = request.body
         console.log(updatedblog)
         const blog = {
-            content: updatedblog.content,
-            votes: updatedblog.votes
+            title: updatedblog.title,
+            author: updatedblog.author,
+            url: updatedblog.url,
+            likes: updatedblog.likes
         }
         console.log(blog)
 
