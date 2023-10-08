@@ -2,6 +2,7 @@ const testrouter = require('express').Router()
 const Blog = require("../models/bloglist")
 const User = require('../models/user')
 const bcrypt = require('bcrypt')
+const Comment = require('../models/comments')
 
 const userList = [
   {
@@ -84,6 +85,8 @@ testrouter.post("/reset", async (request, response, next) => {
     "🚀 ~ file: testrouter.js:11 ~ testrouter.post ~ userres:",
     userres
   );
+  const commentres = await Comment.deleteMany({})
+  console.log("🚀 ~ file: testrouter.js:89 ~ testrouter.post ~ commentres:", commentres)
   let counter = 0;
   
   for (let user of userList) {

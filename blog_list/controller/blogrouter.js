@@ -1,14 +1,22 @@
 const blogrouter = require('express').Router()
 const Blog = require("../models/bloglist")
 const User = require('../models/user')
+const Comment = require('../models/comments')
 const jwt = require('jsonwebtoken')
 const middleware = require('../util/middleware')
+const  mongoose = require('mongoose')
 require('dotenv').config()
 
 
 
 blogrouter.get('/', async (request, response, next) => {
-    const blogs = await Blog.find({}).populate('user', { blogs: 0 })
+    const blogs = await Blog.find({})
+    .populate('user', { blogs: 0 })
+    .populate('comment')
+    .exec()
+   
+    
+    console.log("🚀 ~ file: blogrouter.js:14 ~ blogrouter.get ~ blogs:", blogs)
     response.json(blogs)
 })
 
@@ -38,7 +46,7 @@ blogrouter.post('/', middleware.userExtractor, async (request, response, next) =
         return response.status(400).send({error:"Missing title or URL"})
     }
     if (!blogreq.likes || blogreq.likes === "") {
-        blogreq.votes = 0
+        blogreq.likes = 0
     }
     console.log("user", user)
 
@@ -193,6 +201,42 @@ blogrouter.put('/like/:id', middleware.userExtractor, async (request, response, 
     }
 
 
+
+})
+
+blogrouter.post('/:id/comments',middleware.userExtractor,async (request,response,next)=>{
+    const reqComment = request.body
+    const loginuser = request.user
+    if (loginuser) {
+        console.log("🚀 ~ file: blogrouter.js:203 ~ blogrouter.post ~ reqComment:", reqComment)
+    const _id = new mongoose.Types.ObjectId(request.params.id)
+    console.log("🚀 ~ file: blogrouter.js:204 ~ blogrouter.post ~ _id:", _id)
+    const newComment = new Comment({
+        ...reqComment,
+        blog:_id
+    })
+    const commentRes = await newComment.save()
+    console.log("🚀 ~ file: blogrouter.js:211 ~ blogrouter.post ~ commentRes:", commentRes)
+
+    const blog = await Blog.findById(request.params.id)
+    console.log("🚀 ~ file: blogrouter.js:213 ~ blogrouter.post ~ blog:", blog)
+    
+    blog.comment= blog.comment.concat(commentRes._id)
+    const blogres = await Blog.findByIdAndUpdate(request.params.id,blog,{
+        new: true,
+        context: 'query',
+        runValidators: true,
+    })
+    console.log("🚀 ~ file: blogrouter.js:221 ~ blogrouter.post ~ blogres:", blogres)
+    return response.status(201).json({
+        ...commentRes.toJSON(),
+        blog: commentRes.blog.toString()
+    })
+
+    } else {
+        return response.status(401).json({ error: 'Not logged in' })
+    }
+    
 
 })
 
