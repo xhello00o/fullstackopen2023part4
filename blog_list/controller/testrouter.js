@@ -1,21 +1,20 @@
 const testrouter = require('express').Router()
-const Blog = require("../models/bloglist")
-const User = require('../models/user')
+const {Blog,User} = require("../models/index")
 const bcrypt = require('bcrypt')
 
 const userList = [
   {
-    username: "test1",
+    username: "test1@abc.com",
     name: "Michael Chan",
     password: "password123",
   },
   {
-    username: "test2",
+    username: "test2@abc.com",
     name: "Edsger W. Dijkstra",
     password: "pw",
   },
   {
-    username: "test3",
+    username: "test3@abc.com",
     name: "Robert C. Martin",
     password: "passwordis123",
   },
@@ -44,7 +43,8 @@ const initialBlogs = [
       author: "Edsger W. Dijkstra",
       url: "http://www.cs.utexas.edu/~EWD/transcriptions/EWD08xx/EWD808.html",
       likes: 12,
-      __v: 0
+      __v: 0,
+      year: 2000
   },
   {
       _id: "5a422b891b54a676234d17fa",
@@ -74,12 +74,17 @@ const initialBlogs = [
 
 
 testrouter.post("/reset", async (request, response, next) => {
-  const blogres = await Blog.deleteMany({});
+  const blogres = await Blog.destroy({
+    where:{},
+    truncate: true
+  });
   console.log(
     "🚀 ~ file: testrouter.js:10 ~ testrouter.post ~ blogres:",
     blogres
   );
-  const userres = await User.deleteMany({});
+  const userres = await User.destroy({
+    where:{},
+    cascade: true})
   console.log(
     "🚀 ~ file: testrouter.js:11 ~ testrouter.post ~ userres:",
     userres
@@ -89,34 +94,36 @@ testrouter.post("/reset", async (request, response, next) => {
   for (let user of userList) {
     console.log("🚀 ~ file: testrouter.js:66 ~ testrouter.post ~ counter:", counter)
     const passwordHash = await bcrypt.hash(user.password, 10);
-    const newuser = new User({
+    const newuser = User.build({
       username: user.username,
       name: user.name,
       passwordHash: passwordHash,
     });
     const savedUser = await newuser.save();
-    let blogid = [];
-    for (let blogIndex of [counter, counter + 1]) {
-      console.log("🚀 ~ file: testrouter.js:78 ~ testrouter.post ~ blogIndex:", blogIndex)
-      let blog = new Blog({
-        ...initialBlogs[blogIndex],
-        user: savedUser._id,
-      });
-      const blogresp = await blog.save();
-      blogid.push(blogresp._id);
+    const userBlogs = initialBlogs
+    .filter(blog => blog.author === user.name)
+    .map((blog) => {
+      const { _id, __v, ...rest } = blog;
+        return { ...rest, userId: savedUser.id }
+     })
+
+        const createdBlogs= await Blog.bulkCreate(userBlogs,{validate:true})
+        console.log("🚀 ~ file: testrouter.js:111 ~ testrouter.post ~ createdBlogs:", createdBlogs)
+        
+      
+
+      
+      
+  
     }
-    console.log("blogid", blogid);
 
-    const updateduser = {
-      _id: savedUser._id,
-      blogs: blogid,
-    };
-    await User.findByIdAndUpdate(savedUser._id, updateduser);
+    return response.status(204).end();
+    
 
-    counter += 2;
-  }
 
-  response.status(204).end();
+  
+
+  
 });
 
 module.exports =testrouter

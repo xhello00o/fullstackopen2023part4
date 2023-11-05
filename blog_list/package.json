@@ -19,6 +19,7 @@
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",
     "supertest": "^6.3.3",
+    "umzug": "^3.3.1",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
@@ -29,7 +30,8 @@
     "lint": "eslint .",
     "test": "cross-env NODE_ENV=test jest --verbose --runInBand",
     "cross-env": "^7.0.3",
-    "start:test": "cross-env NODE_ENV=test nodemon index.js"
+    "start:test": "cross-env NODE_ENV=test nodemon index.js",
+    "migration:down": "node util/rollback.js"
   },
   "eslintConfig": {
     "extends": [

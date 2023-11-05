@@ -1,34 +1,39 @@
-const mongoose = require("mongoose");
-const uniqueValidator = require("mongoose-unique-validator");
+const {Model, DataTypes}=require('sequelize')
+const {sequelize} = require('../util/dbMigration')
 
-const userSchema = new mongoose.Schema({
-    username: {
-        type: String,
-        required: true,
+class User extends Model {}
+User.init({
+    id:{
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
+        allowNull: false,
+        primaryKey: true
+    },
+    username:{
+        type: DataTypes.TEXT,
+        allowNull: false,
         unique: true,
-        minlength: 3,
+        validate:{
+            isEmail: true 
+        }
     },
-    name: String,
-    passwordHash: {
-        type: String,
+    name:{
+        type: DataTypes.TEXT,
+        allowNull: false
     },
-    blogs: [
-        {
-            type: mongoose.Schema.Types.ObjectId,
-            ref:'Blog'
-        },
-    ],
-});
-
-userSchema.plugin(uniqueValidator);
-
-userSchema.set("toJSON", {
-    transform: (document, returnedObject) => {
-        returnedObject.id = returnedObject._id.toString();
-        delete returnedObject._id;
-        delete returnedObject.__v;
-        delete returnedObject.passwordHash;
+    passwordHash:{
+        type: DataTypes.TEXT,
+        allowNull: false
     },
-});
+    disabled: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+        allowNull: false
+    }
+     }, {sequelize, 
+    underscored: true,
+    timestamps: true,
+    modelName: 'user'}
+)
 
-module.exports = mongoose.model("User", userSchema);
+module.exports = User

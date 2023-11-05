@@ -1,7 +1,34 @@
 
+const { response } = require("../app");
+const { Session, User } = require("../models/index");
 const logger = require("./logger");
 const jwt = require('jsonwebtoken')
 require('dotenv').config()
+
+const sessionValidator = async (request,response,next) => {
+    console.log("session", request.session);
+    const sessionGet = await Session.findByPk(request.session,{
+        include:{
+            model:User,
+               }
+    })
+
+
+
+
+    if ( !sessionGet||sessionGet.user.disabled) {
+        const error = new Error('Pls re-login')
+        error.name = `invalid session`
+        error.message = 'invalid session, Pls re-login.'
+
+        throw error
+    }
+
+
+
+    next()
+
+}
 
 const userExtractor = async (request, response, next) => {
     console.log("token", request.token);
@@ -12,6 +39,7 @@ const userExtractor = async (request, response, next) => {
             return response.status(401).json({ error: "token invalid" });
         }
         request.user = decodedToken.id.toString();
+        request.session = decodedToken.sessionId
     }
     else{
         console.log("abc")
@@ -57,15 +85,28 @@ const errorHandler = (error, request, response, next) => {
         return response.status(400).send({ error: "malformatted id" });
     } else if (error.name === "ValidationError") {
         return response.status(400).json({ error: error.message });
+
+    }else if(error.name === "SequelizeValidationError") {
+        return response.status(400).json({
+            error:error.message,
+            instance: error.errors[0].instance
+        })
+    } else{
+        return response.status(400).json({
+            error,
+            errorMessage:error.message})
+    }
+        
+
     }
 
-    next(error);
-};
+;
 
 module.exports = {
     requestLogger,
     unknownEndpoint,
     errorHandler,
     tokenExtractor,
-    userExtractor
+    userExtractor,
+    sessionValidator
 };

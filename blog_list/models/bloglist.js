@@ -1,24 +1,42 @@
-const mongoose = require('mongoose')
 
+const {Model, DataTypes}=require('sequelize')
+const {sequelize} = require('../util/dbMigration')
 
-const blogSchema = new mongoose.Schema({
-    title: String,
-    url: String,
-    likes: Number,
-    user: {
-        type:mongoose.Schema.Types.ObjectId,
-        ref:'User'
+class Blog extends Model {}
+Blog.init({
+    id:{
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
+        allowNull: false,
+        primaryKey: true
+    },
+    author:{
+        type: DataTypes.TEXT
+    },
+    url:{
+        type: DataTypes.TEXT,
+        allowNull: false
+    },
+    title:{
+        type: DataTypes.TEXT,
+        allowNull: false
+    },
+    likes:{
+        type: DataTypes.INTEGER,
+        allowNull: false
+    },
+    year:{
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        validate:{
+            min: 1991,
+            max: new Date().getFullYear(), 
+        }
     }
-  })
+}, {sequelize, 
+    underscored: true,
+    timestamps: false,
+    modelName: 'blog'
+})
 
-  
-
-  blogSchema.set('toJSON', {
-    transform: (document, returnedObject) => {
-      returnedObject.id = returnedObject._id.toString()
-      delete returnedObject._id
-      delete returnedObject.__v
-    }
-  })
-
-module.exports = mongoose.model('Blog',blogSchema)
+module.exports = Blog
